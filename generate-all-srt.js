@@ -3,7 +3,7 @@ const path = require('path')
 const fetch = require('node-fetch')
 
 const outputDir = path.join(__dirname, 'SRT', 'ara-sirajtafseer')
-const apiLink = 'https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1'
+const quranAPI = 'https://api.alquran.cloud/v1/quran/quran-uthmani'
 
 function formatTime(seconds) {
   const ms = Math.floor((seconds % 1) * 1000)
@@ -14,63 +14,61 @@ function formatTime(seconds) {
   return `${h}:${m}:${s},${String(ms).padStart(3, '0')}`
 }
 
-async function getJSON(url) {
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`)
-  return res.json()
-}
-
-async function generateChapter(chapter) {
-  const padded = String(chapter).padStart(3, '0')
-  const outFile = path.join(outputDir, `${chapter}.srt`)
-
-  if (fs.existsSync(outFile)) {
-    console.log(`Skipping ${chapter}.srt (already exists)`)
-    return
-  }
-
-  const verses = await getJSON(`${apiLink}/editions/ara-sirajtafseer/${chapter}.json`)
-  const ayahs = verses.ayahs
-
-  if (!ayahs || !ayahs.length) {
-    throw new Error(`No ayahs found for chapter ${chapter}`)
-  }
-
-  // تقسيم زمني بسيط: كل آية تحصل على مدة حسب طولها
-  const totalChars = ayahs.reduce((sum, a) => sum + a.text.length, 0)
-  const totalDuration = 30 + ayahs.length * 6
-
-  let currentTime = 0
-  let srt = ''
-
-  ayahs.forEach((ayah, index) => {
-    const share = ayah.text.length / totalChars
-    const duration = Math.max(3, totalDuration * share)
-    const start = currentTime
-    const end = currentTime + duration
-    currentTime = end
-
-    srt += `${index + 1}\n`
-    srt += `${formatTime(start)} --> ${formatTime(end)}\n`
-    srt += `${ayah.text}\n\n`
-  })
-
-  fs.writeFileSync(outFile, srt, 'utf8')
-  console.log(`Created ${chapter}.srt with ${ayahs.length} ayahs`)
-}
-
 async function main() {
   fs.mkdirSync(outputDir, { recursive: true })
 
-  for (let chapter = 1; chapter <= 114; chapter++) {
-    try {
-      await generateChapter(chapter)
-    } catch (error) {
-      console.error(`Failed chapter ${chapter}:`, error.message)
+  const res = await fetch(quranAPI)
+  if (!res.ok) throw new Error(`Failed to fetch Quran: ${res.status}`)
+
+  const json = await res.json()
+  const surahs = json?.data?.surahs
+
+  if (!surahs || !surahs.length) {
+    throw new Error('No surahs found in Quran API response')
+  }
+
+  for (const surah of surahs) {
+    const chapter = surah.number
+    const ayahs = surah.ayahs
+
+    if (!ayahs || !ayahs.length) {
+      console.error(`No ayahs for chapter ${chapter}`)
+      continue
     }
+
+    const outFile = path.join(outputDir, `${chapter}.srt`)
+
+    if (fs.existsSync(outFile)) {
+      console.log(`Skipping ${chapter}.srt (already exists)`)
+      continue
+    }
+
+    const totalChars = ayahs.reduce((sum, a) => sum + a.text.length, 0)
+    const totalDuration = 30 + ayahs.length * 6
+
+    let currentTime = 0
+    let srt = ''
+
+    ayahs.forEach((ayah, index) => {
+      const share = ayah.text.length / totalChars
+      const duration = Math.max(3, totalDuration * share)
+      const start = currentTime
+      const end = currentTime + duration
+      currentTime = end
+
+      srt += `${index + 1}\n`
+      srt += `${formatTime(start)} --> ${formatTime(end)}\n`
+      srt += `${ayah.text}\n\n`
+    })
+
+    fs.writeFileSync(outFile, srt, 'utf8')
+    console.log(`Created ${chapter}.srt with ${ayahs.length} ayahs`)
   }
 
   console.log('Finished generating all SRT files.')
 }
 
-main()
+main().catch(error => {
+  console.error(error)
+  process.exit(1)
+})
