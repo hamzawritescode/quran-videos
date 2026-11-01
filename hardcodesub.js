@@ -34,6 +34,34 @@ async function downloadAudio(chapter) {
   return audioFile
 }
 
+async function ensureSubtitle(chapter, editionName) {
+  const paddedChapter = (chapter + '').padStart(3, '0')
+  const targetDir = path.join(subtitlesPath, editionName)
+  const targetFile = path.join(targetDir, chapter + '.srt')
+
+  if (fs.existsSync(targetFile)) return targetFile
+
+  fs.mkdirSync(targetDir, { recursive: true })
+
+  const possibleSources = [
+    path.join(__dirname, 'SRT', editionName, chapter + '.srt'),
+    path.join(__dirname, 'SRT', editionName, paddedChapter + '.srt'),
+    path.join(__dirname, 'SRT', chapter + '.srt'),
+    path.join(__dirname, 'SRT', paddedChapter + '.srt')
+  ]
+
+  const sourceFile = possibleSources.find(file => fs.existsSync(file))
+
+  if (!sourceFile) {
+    throw new Error('Subtitle not found for chapter ' + chapter + ': ' + targetFile)
+  }
+
+  fs.copyFileSync(sourceFile, targetFile)
+  console.log('Copied subtitle:', sourceFile, '->', targetFile)
+
+  return targetFile
+}
+
 // stores the end result
 const hardcodedSubPath = path.join(__dirname, 'output')
 
@@ -309,6 +337,7 @@ async function generateVideos () {
     const fileSavePath = path.join(hardcodedSubPath, paddedI + '.mp4')
 
     const audioFile = await downloadAudio(chap)
+    await ensureSubtitle(chap, editionName)
 
     spawnSync('ffmpeg', ['-stream_loop', repeat, '-i', pixaFileWithPath, '-i', audioFile, '-vf', 'subtitles=subtitles/' + editionName + '/' + chap + ".srt:force_style='Alignment=2,OutlineColour=&H100000000,BorderStyle=3,Outline=1,Shadow=0,Fontsize=18,MarginL=0,MarginV=60'", '-crf', '18', '-vcodec', 'libx264', '-preset', 'ultrafast', '-map', '0:v', '-map', '1:a', '-c:a', 'copy', '-shortest', fileSavePath])
     console.log('before uploading the video for chapter ', chap)
@@ -480,11 +509,3 @@ async function subPart (pathToFile, localPage) {
 }
 
 // Add title & description in subtitles pages
-async function titleDescPart (title, desc, localPage) {
-  console.log('Skipping title and description in test mode.')
-}
-
-// Select new language
-async function addNewLang (langVal, localPage) {
-  console.log('Skipping language selection in test mode.')
-}
