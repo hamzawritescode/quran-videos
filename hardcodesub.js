@@ -14,6 +14,14 @@ const pixabayPath = path.join(__dirname, 'pixabay-videos')
 
 const audioPath = path.join(__dirname, 'audios')
 
+const audioUrl = 'https://download.quranicaudio.com/quran/mishaari_raashid_al_3afaasee/112.mp3'
+const audioFile = path.join(audioPath, '112.mp3')
+
+if (!fs.existsSync(audioFile)) {
+  fs.mkdirSync(audioPath, { recursive: true })
+  spawnSync('curl', ['-L', audioUrl, '-o', audioFile])
+}
+
 // stores the end result
 const hardcodedSubPath = path.join(__dirname, 'output')
 
