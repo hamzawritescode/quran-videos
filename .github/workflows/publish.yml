@@ -24,6 +24,9 @@ jobs:
       - name: Generate all subtitles
         run: node generate-all-srt.js
 
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
       - name: Publish video
         env:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
