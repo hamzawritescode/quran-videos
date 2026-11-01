@@ -357,7 +357,7 @@ async function generateVideos () {
 if (ffmpegResult.status !== 0 || !fs.existsSync(fileSavePath)) {
   console.error('FFmpeg failed with status:', ffmpegResult.status)
   console.error('FFmpeg stderr:', ffmpegResult.stderr?.toString())
-  throw new Error('Failed to create video for chapter ' + chapter)
+  throw new Error('Failed to create video for chapter ' + chap)
 }
 
 console.log('Video created successfully:', fileSavePath)
