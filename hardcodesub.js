@@ -339,8 +339,28 @@ async function generateVideos () {
     const audioFile = await downloadAudio(chap)
     await ensureSubtitle(chap, editionName)
 
-    spawnSync('ffmpeg', ['-stream_loop', repeat, '-i', pixaFileWithPath, '-i', audioFile, '-vf', 'subtitles=subtitles/' + editionName + '/' + chap + ".srt:force_style='Alignment=2,OutlineColour=&H100000000,BorderStyle=3,Outline=1,Shadow=0,Fontsize=18,MarginL=0,MarginV=60'", '-crf', '18', '-vcodec', 'libx264', '-preset', 'ultrafast', '-map', '0:v', '-map', '1:a', '-c:a', 'copy', '-shortest', fileSavePath])
-    console.log('before uploading the video for chapter ', chap)
+    const ffmpegResult = spawnSync('ffmpeg', [
+  '-stream_loop', repeat,
+  '-i', pixaFileWithPath,
+  '-i', audioFile,
+  '-vf', `subtitles='${path.relative(__dirname, path.join('subtitles', editionName, chap + '.srt')).replace(/'/g, "\\'")}'`,
+  '-crf', '18',
+  '-vcodec', 'libx264',
+  '-preset', 'ultrafast',
+  '-map', '0:v',
+  '-map', '1:a',
+  '-c:a', 'copy',
+  '-shortest',
+  fileSavePath
+])
+
+if (ffmpegResult.status !== 0 || !fs.existsSync(fileSavePath)) {
+  console.error('FFmpeg failed with status:', ffmpegResult.status)
+  console.error('FFmpeg stderr:', ffmpegResult.stderr?.toString())
+  throw new Error('Failed to create video for chapter ' + chapter)
+}
+
+console.log('Video created successfully:', fileSavePath)
 
     let title = await uploadVideo(fileSavePath, editionLang, chap)
     console.log('Uploading completed for ', chap)
