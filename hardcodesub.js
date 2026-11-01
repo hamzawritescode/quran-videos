@@ -379,7 +379,13 @@ function getKeyByValue (obj, value) {
 // context and browser is a global variable and it can be accessed from anywhere
 // function that launches a browser
 async function launchBrowser () {
-  browser = await puppeteer.launch({ headless: true })
+  const launchOptions = { headless: true }
+
+  if (process.env.CI) {
+    launchOptions.args = ['--no-sandbox', '--disable-setuid-sandbox']
+  }
+
+  browser = await puppeteer.launch(launchOptions)
   page = await browser.newPage()
   await page.setDefaultTimeout(timeout)
   await page.setViewport({ width: width, height: height })
