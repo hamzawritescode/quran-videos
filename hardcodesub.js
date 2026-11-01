@@ -295,7 +295,9 @@ async function generateVideos () {
   edHolder = {}
   for (const value of Object.values(editionsJSON)) { edHolder[value.name] = value.language }
 
-  const pixabayFiles = fs.readdirSync(pixabayPath).sort()
+  const pixabayFiles = fs.readdirSync(pixabayPath)
+  .filter(file => /\.(mp4|mov|webm|mkv)$/i.test(file))
+  .sort()
   let chap, day;
   [editionName, chap, playlistToSelect, uploaded, day] = getState()
   chap = parseInt(chap)
