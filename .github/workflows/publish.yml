@@ -21,6 +21,9 @@ jobs:
       - name: Install dependencies
         run: PUPPETEER_SKIP_DOWNLOAD=true npm install --no-audit --no-fund --prefer-offline
 
+      - name: Generate all subtitles
+        run: node generate-all-srt.js
+
       - name: Publish video
         env:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
