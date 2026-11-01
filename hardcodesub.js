@@ -482,11 +482,23 @@ async function getLinksJSON (urls) {
   ).catch(console.error)
 }
 
-// Temporary upload function for the first test
 async function uploadVideo (pathToFile, lang, chapter) {
   console.log('Video created successfully:', pathToFile)
-  console.log('YouTube API upload will be added next.')
-  return 'Test Video'
+
+  const title = `سورة ${chapter} - تفسير السراج`
+  const description = 'تلاوة القرآن الكريم مع التفسير.'
+
+  const videoId = await uploadYouTubeVideo(pathToFile, title, description)
+
+  console.log('Uploaded video ID:', videoId)
+  console.log('Video URL: https://youtu.be/' + videoId)
+
+  return videoId
+}
+
+async function uploadYouTubeVideo(filePath, title, description) {
+  const { uploadVideo: upload } = require('./upload-youtube')
+  return await upload(filePath, title, description, ['Quran', 'القرآن', 'تفسير', 'Islam'])
 }
 
 async function sleep (ms) {
