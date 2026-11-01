@@ -14,12 +14,24 @@ const pixabayPath = path.join(__dirname, 'pixabay-videos')
 
 const audioPath = path.join(__dirname, 'audios')
 
-const audioUrl = 'https://download.quranicaudio.com/quran/mishaari_raashid_al_3afaasee/112.mp3'
-const audioFile = path.join(audioPath, '112.mp3')
+const reciterBaseUrl = 'https://download.quranicaudio.com/quran/mishaari_raashid_al_3afaasee'
 
-if (!fs.existsSync(audioFile)) {
-  fs.mkdirSync(audioPath, { recursive: true })
-  spawnSync('curl', ['-L', audioUrl, '-o', audioFile])
+async function downloadAudio(chapter) {
+  const paddedChapter = (chapter + '').padStart(3, '0')
+  const audioFile = path.join(audioPath, paddedChapter + '.mp3')
+
+  if (!fs.existsSync(audioFile)) {
+    fs.mkdirSync(audioPath, { recursive: true })
+    const audioUrl = `${reciterBaseUrl}/${paddedChapter}.mp3`
+    console.log('Downloading recitation:', audioUrl)
+    const result = spawnSync('curl', ['-L', audioUrl, '-o', audioFile])
+
+    if (result.status !== 0 || !fs.existsSync(audioFile)) {
+      throw new Error('Failed to download recitation for chapter ' + chapter)
+    }
+  }
+
+  return audioFile
 }
 
 // stores the end result
